@@ -15,9 +15,21 @@ exports.expressLoader = () => {
 
     app.use(json());
 
+    const allowedOrigins = [
+        'http://localhost:3000',
+        'https://growsystembackend-production.up.railway.app'
+    ];
+
     app.use(cors({
-        origin: 'http://localhost:3000'
-    }))
+        origin: function (origin, callback) {
+            // Проверяем, что запрос приходит с одного из разрешенных доменов
+            if (allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        }
+    }));
 
     app.use('/api', routes);
 
