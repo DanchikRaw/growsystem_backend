@@ -4,23 +4,20 @@ const Schema = mongoose.Schema;
 
 let devices = new Schema(
     {
-        name: {
+        topic: {
             type: String
         },
         type: {
             type: String
         },
-        status: {
-            type: Boolean
-        },
-        sensors: {
+        sensors: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: 'sensors'
-        },
-        control: {
+        }],
+        control: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: 'control'
-        }
+        }]
     },
     { collection: "devices" }
 );

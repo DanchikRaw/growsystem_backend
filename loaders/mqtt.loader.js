@@ -1,20 +1,17 @@
 require('dotenv').config();
-const mqtt = require('mqtt')
 const {DeviceController} = require("../modules/Device/Device.controller");
+const {mqttConnect} = require("../config/mqtt");
 
 
 exports.mqttLoader = () => {
-    let client = mqtt.connect(process.env.MQTT_URL, {
-        clientId:process.env.MQTT_CLIENT,
-        username:process.env.MQTT_USER,
-        password:process.env.MQTT_PASSWORD,
-    });
+    let client = mqttConnect;
 
     client.on('connect', () => {
+        console.log('MQTT Connected and subscribe');
         DeviceController.allSubscribe(client);
     })
 
     client.on('message',  (topic, message) => {
-        DeviceController.getNewData(topic, message);
+        DeviceController.receiveMessage(topic, message);
     })
 }

@@ -16,7 +16,13 @@ let sensors = new Schema(
         device: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'devices'
-        }
+        },
+        history: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'sensorsHistory'
+            }
+        ]
     },
     { collection: "sensors" }
 );
