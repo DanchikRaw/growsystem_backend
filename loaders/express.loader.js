@@ -14,9 +14,9 @@ exports.expressLoader = () => {
     app.disable('x-powered-by')
 
     app.use(json());
-    
+
     app.use(cors({
-        origin: 'http://localhost:3000',
+        origin: 'https://growsystem-production.up.railway.app/',
 
     }))
 
