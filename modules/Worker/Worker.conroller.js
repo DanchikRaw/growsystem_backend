@@ -1,7 +1,7 @@
 const Device = require('./../Device/Device.model');
 const Workers = require('./../Worker/Worker.model');
 const SensorsHistory = require('./../Device/SensorHistory/SensorHistory.model');
-const {format} = require("date-fns");
+const {format, differenceInMinutes} = require("date-fns");
 const {utcToZonedTime} = require("date-fns-tz");
 
 module.exports.WorkerController = {
@@ -14,7 +14,6 @@ module.exports.WorkerController = {
             const device = await Device.findById(deviceId).populate("sensors").exec();
 
             if (!device) {
-                console.log("Device not found.");
                 return res.status(404).json({ error: "Device not found." });
             }
 
@@ -31,19 +30,40 @@ module.exports.WorkerController = {
                 }
             }).exec();
 
+            const workerVisitCounts = {};
+            const lastEntryTime = {};
+
             // Собираем итоговый массив
             const resultArray = sensorsHistory.map(historyItem => {
                 const worker = workers.find(worker => worker.id === historyItem.value);
                 const bangkokTime = utcToZonedTime(historyItem.date, 'Asia/Bangkok');
+
+                if (worker) {
+                    workerVisitCounts[worker.id] = (workerVisitCounts[worker.id] || 0) + 1;
+                }
+
+                const isEvenVisit = worker && workerVisitCounts[worker.id] % 2 === 0;
+                const visitType = isEvenVisit ? 'exit' : 'entry';
+
+                let workDayLength = null;
+
+                if (!isEvenVisit) {
+                    lastEntryTime[worker.id] = bangkokTime;
+                } else if (lastEntryTime[worker.id]) {
+                    const diffMinutes = differenceInMinutes(bangkokTime, lastEntryTime[worker.id]);
+                    workDayLength = `${Math.floor(diffMinutes / 60)} hours and ${diffMinutes % 60} minutes`;
+                }
+
                 return {
                     datetime: format(bangkokTime, "yyyy-MM-dd HH:mm:ss"),
-                    name: worker ? worker.name : "Unknown"
+                    name: worker ? worker.name : "Unknown",
+                    visitType: visitType,
+                    workDayLength: workDayLength
                 };
             });
 
             return res.status(200).json(resultArray);
         } catch (error) {
-            console.error("Error fetching workers history:", error);
             return res.status(500).json({ error: "Internal server error." });
         }
     }

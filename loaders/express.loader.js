@@ -16,7 +16,7 @@ exports.expressLoader = () => {
     app.use(json());
 
     app.use(cors({
-        origin: 'https://growsystem-production.up.railway.app'
+        origin: process.env.FRONTEND_URL
     }));
 
     app.use('/api', routes);
