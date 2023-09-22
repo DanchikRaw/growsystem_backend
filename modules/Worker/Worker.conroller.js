@@ -57,6 +57,7 @@ module.exports.WorkerController = {
                 return {
                     datetime: format(bangkokTime, "yyyy-MM-dd HH:mm:ss"),
                     name: worker ? worker.name : "Unknown",
+                    worker_id: worker?._id,
                     visitType: visitType,
                     workDayLength: workDayLength
                 };
