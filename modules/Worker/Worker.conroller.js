@@ -67,5 +67,68 @@ module.exports.WorkerController = {
         } catch (error) {
             return res.status(500).json({ error: "Internal server error." });
         }
+    },
+    async getWorkerTotalHours(req, res) {
+        const deviceId = req.query.deviceId;
+        const workerId = req.query.workerId;
+        const startDate = req.query.startDate;
+        const endDate = req.query.endDate;
+
+        try {
+            const device = await Device.findById(deviceId).populate("sensors").exec();
+
+            if (!device) {
+                return res.status(404).json({ error: "Device not found." });
+            }
+
+            const worker = await Workers.findById(workerId).exec();
+
+            if (!worker) {
+                return res.status(404).json({ error: "Worker not found or does not belong to the specified device." });
+            }
+
+            const formattedStartDate = format(new Date(startDate), "yyyy-MM-dd");
+            const formattedEndDate = format(new Date(endDate), "yyyy-MM-dd");
+
+
+            const sensorsHistory = await SensorsHistory.find({
+                sensor: { $in: device.sensors },
+                value: worker.id,
+                date: {
+                    $gte: new Date(formattedStartDate),
+                    $lt: new Date(formattedEndDate)
+                }
+            }).sort({ date: 1 }).exec();
+
+            let lastEntryTime = null;
+            let totalWorkMinutes = 0;
+            const uniqueWorkDays = new Set();
+
+            sensorsHistory.forEach((historyItem, index) => {
+                const bangkokTime = utcToZonedTime(historyItem.date, 'Asia/Bangkok');
+                const formattedDate = format(bangkokTime, "yyyy-MM-dd");
+                const isEvenVisit = index % 2 !== 0;
+
+                uniqueWorkDays.add(formattedDate);
+
+                if (!isEvenVisit) {
+                    lastEntryTime = bangkokTime;
+                } else if (lastEntryTime) {
+                    const diffMinutes = differenceInMinutes(bangkokTime, lastEntryTime);
+                    totalWorkMinutes += diffMinutes;
+                }
+            });
+
+            const totalWorkHours = totalWorkMinutes / 60;
+            const averageWorkHours = totalWorkMinutes / (60 * uniqueWorkDays.size);
+
+            return res.status(200).json({
+                name: worker.name,
+                totalWorkHours: totalWorkHours.toFixed(2),
+                averageWorkHours: isNaN(averageWorkHours) ? 0 : averageWorkHours.toFixed(2)
+            });
+        } catch (error) {
+            return res.status(500).json({ error: "Internal server error." });
+        }
     }
 };

@@ -7,6 +7,7 @@ router.get('/', (req, res) => {
 })
 
 router.get('/workers', WorkerController.getWorkersHistoryByDevice);
+router.get('/worker', WorkerController.getWorkerTotalHours);
 
 router.use(require('./device.route'));
 
