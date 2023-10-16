@@ -8,21 +8,37 @@ module.exports.DeviceService = {
         return Device.find({}).populate({path:'sensors', select: 'topic name'}).exec();
     },
     async receiveMessage(topic, message) {
-        let topicInfo = topic.split('_');
-        let res = await Device.findOne({topic: topicInfo[0]}).populate({path:'sensors', select: 'name type', match: {topic: topicInfo[1]}}).exec();
+        try {
+            const topicInfo = topic.split('_');
 
-        if (res) {
-            let newSensorData = new SensorHistory({
-                sensor: res.sensors[0]._id,
-                value: message.toString(),
-            })
-
-            let newRes = await newSensorData.save();
-            if (newRes) {
-                return true;
+            if (!topicInfo || topicInfo.length !== 2) {
+                throw new Error('Invalid topic format');
             }
-        }
 
-        return false;
+            const device = await Device.findOne({topic: topicInfo[0]})
+                .populate({
+                    path: 'sensors',
+                    select: 'name type',
+                    match: {topic: topicInfo[1]}
+                })
+                .exec();
+
+            if (device && device.sensors.length > 0) {
+                const newSensorData = new SensorHistory({
+                    sensor: device.sensors[0]._id,
+                    value: message.toString(),
+                });
+
+                const newRes = await newSensorData.save();
+                if (newRes) {
+                    return true;
+                }
+            }
+
+            return false;
+        } catch (error) {
+            console.error('Error in receiveMessage:', error);
+            return false;
+        }
     }
 }

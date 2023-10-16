@@ -36,17 +36,23 @@ module.exports.WorkerController = {
 
             // Собираем итоговый массив
             const resultArray = sensorsHistory.map(historyItem => {
-                const worker = workers.find(worker => worker.id === historyItem.value);
+                let worker = workers.find(worker => worker.id === historyItem.value);
                 const bangkokTime = utcToZonedTime(historyItem.date, 'Asia/Bangkok');
 
                 if (worker) {
                     workerVisitCounts[worker.id] = (workerVisitCounts[worker.id] || 0) + 1;
+                } else {
+                    worker = {
+                        id: historyItem.value,
+                        name: 'New user'
+                    }
                 }
 
+
+                let workDayLength = null;
                 const isEvenVisit = worker && workerVisitCounts[worker.id] % 2 === 0;
                 const visitType = isEvenVisit ? 'exit' : 'entry';
 
-                let workDayLength = null;
 
                 if (!isEvenVisit) {
                     lastEntryTime[worker.id] = bangkokTime;
@@ -54,6 +60,7 @@ module.exports.WorkerController = {
                     const diffMinutes = differenceInMinutes(bangkokTime, lastEntryTime[worker.id]);
                     workDayLength = `${Math.floor(diffMinutes / 60)} hours and ${diffMinutes % 60} minutes`;
                 }
+
 
                 return {
                     datetime: format(bangkokTime, "yyyy-MM-dd HH:mm:ss"),
@@ -63,6 +70,7 @@ module.exports.WorkerController = {
                     workDayLength: workDayLength
                 };
             });
+
 
             return res.status(200).json(resultArray);
         } catch (error) {
